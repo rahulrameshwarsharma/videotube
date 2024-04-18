@@ -1,0 +1,13 @@
+# node modules
+.node_modules
+
+#vscode settings file
+/.vscode
+
+# build for production in react
+./dist
+
+# environment variables
+*.env
+.env
+.env.*

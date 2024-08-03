@@ -42,4 +42,4 @@ The true power of mongodb are Aggregation pipelines, for this we are using page 
     -   we are not encrypting directly the passwords so we are using "pre middleware"
 
 #   Step 03: setup cloudinary, multer for image handling.
-
+-   check documentation

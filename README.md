@@ -42,4 +42,34 @@ The true power of mongodb are Aggregation pipelines, for this we are using page 
     -   we are not encrypting directly the passwords so we are using "pre middleware"
 
 #   Step 03: setup cloudinary, multer for image handling.
+-   check documentation
+
+
+##  Error 01: App is crashing due to error in asyncHandler
+-   The error was that we are not returning hightorder function [File link](src\utils\asyncHandler.js)
+
+```
+const asyncHandler = (requestHandler) => {
+    return (req, res, next) => {
+        Promise.resolve(requestHandler(req, res, next)).catch((err) => next(err))
+    }
+}
+
+```
+
+
+# Step 04: Step to register user
+###       steps to register user pseudocode
+    1. get user details from frontend
+    2. validation of input received
+    3. check if user already exits: check both email and username
+    4. check for images, check for avatar
+    5. upload images to cloudinary if the available
+            a. check whether user uploaded avatar
+            b. if user uploaded, whether multer uploaded it to cloudinary
+            c. if uploaded to cloudinary, do we have url of cloudinary or not
+    6. create user object - create entry in db
+    7. remove password and refresh token field from response
+    8. check for user creation if yes continue, if not created handle the error
+    9. if user created return response
 

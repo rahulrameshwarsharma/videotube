@@ -1,6 +1,8 @@
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiError } from "../utils/apiError.js";
 import { User } from "../models/user-model.js"
+import { uploadOnCloudinary } from "../utils/cloudinary.js";
+import { ApiResponse } from "../utils/apiResponse.js";
 
 
 const registerUser = asyncHandler ( async (req, res) => {
@@ -22,7 +24,7 @@ const registerUser = asyncHandler ( async (req, res) => {
     const {fullName, email, userName, password} = req.body
 
     // console.log("fullName", fullName);
-    // console.log("email", email);
+    console.log("email", email);
     // console.log("userName", userName);
 
         // How beginner programmers check validation
@@ -40,7 +42,7 @@ const registerUser = asyncHandler ( async (req, res) => {
     }
 
                             // ############# Code for checking the already existing user #########
-    const existedUser = User.findOne({
+    const existedUser = await User.findOne({
         $or: [{userName}, {email}]
     })
 
@@ -49,16 +51,51 @@ const registerUser = asyncHandler ( async (req, res) => {
     }
 
     const avatarLocalPath = req.files?.avatar[0]?.path;
-    const coverImageLocalPath = req.files?.coverImage[0]?.path;
+    // const coverImageLocalPath = req.files?.coverImage[0]?.path;
 
-    if (!avatarLocalPath) {
-        throw new ApiError(400, "Avatar is required")
+    // console.log("req.file", req.files);
+    // console.log("req.files.coverImage", req.files.coverImage);
+
+    let coverImageLocalPath;
+    if (req.files && Array.isArray(req.files.coverImage) && req.files.coverImage.length > 0) {
+        coverImageLocalPath = req.files.coverImage[0].path
     }
 
+    if (!avatarLocalPath) {
+        throw new ApiError(400, "Avatar file is required")
+    }
 
+    const avatar = await uploadOnCloudinary(avatarLocalPath)
+    const coverImage = await uploadOnCloudinary(coverImageLocalPath)
+    
+    if (!avatar) {
+        throw new ApiError(400, "Avatar file is required")
+    }
 
+//  taking this "User" inside a another variable "user" to reconfirm whether the user created or not
+
+    const user = await User.create({
+        fullName,
+        avatar: avatar.url,
+        coverImage: coverImage?.url || "",              // This is the corner cases
+        email,
+        password,
+        userName: userName.toLowerCase(),
+    });
+
+    //  In below codes we are checking whether the user created or not, and if the user created then we have to
+    // remove some fields from the user document like refresh token, password etc
+
+    const createdUser = await User.findById(user._id).select("-password -refreshToken");
+
+    if (!createdUser) {
+        throw new ApiError(500, "Something went wrong while registering the user")
+    }
+
+    return res.status(201).json(
+        new ApiResponse(200, createdUser, "User Registered Successfully")
+    )
 })
-
 
 export {
     registerUser,

@@ -276,6 +276,44 @@ const updateAccountDetails = asyncHandler(async(req, res) => {
     return res.status(200).json(new ApiResponse(200, updatedUser, "Account details updated successfully"))
 })
 
+// The recommended suggestions for a production grade code is: => Always update a 'file data' seperately rather then updating it with 'String data or Text data'.
+
+const updateUserAvatar = asyncHandler(async(req, res) => {
+    const avatarLocalPath = req.file?.path
+
+    if(!avatarLocalPath) {
+        throw new ApiError(400, "Avatar file is missing");
+    }
+
+    const avatar = await uploadOnCloudinary(avatarLocalPath)
+
+    if(!avatar.url) {
+        throw new ApiError(400, "Error while uploading on avatar");
+    }
+
+    const updatedAvatar = await User.findByIdAndUpdate(req.user?._id, {$set: {avatar: avatar.url} }, {new: true}).select("-password");
+
+    return res.status(200).json(200, updatedAvatar, "Avatar is uploaded successfully");
+})
+
+//  Self tried code , probabily of having errors
+
+const updateCoverImage = asyncHandler(async(req, res) => {
+    const coverImageLocalPath = req.file?.path;
+    if(!coverImageLocalPath) {
+        throw new ApiError(400, "Cover Image is missing");
+    }
+
+    const updatedCoverImage = await uploadOnCloudinary(coverImageLocalPath);
+    
+    if(!updatedCoverImage.url) {
+        throw new ApiError(400, "something went wrong while uploading the cover image");
+    }
+
+    const updatedUser = await User.findByIdAndUpdate(req.user?._id, {$set: {coverImage: updatedCoverImage.url}}, {new: true}).select("-password");
+    return res.status(200).json(new ApiResponse(200, updatedUser, "CoverImage updated successfully"));
+});
+
 export {
     registerUser,
     loginUser,
@@ -283,5 +321,7 @@ export {
     refreshAccessToken,
     ChangeCurrentPassword,
     getCurrentUser,
-    updateAccountDetails
+    updateAccountDetails,
+    updateUserAvatar,
+    updateCoverImage
 }

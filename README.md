@@ -1,3 +1,9 @@
+#   List Of Mistakes that might happen while writting a production ready backend
+
+-   Forgot to write "await" in the time taking operations.
+-   Mistaken typos while writting ".env" token names, better do copy paste for credential names.
+
+
 #   Step 01: Fix a Schema for the project backend and make pictorial representation
 -    ## Modelling for schema
 ```

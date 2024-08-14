@@ -237,9 +237,51 @@ try {
 
 })
 
+const ChangeCurrentPassword = asyncHandler(async(req, res) => {
+    const {oldPassword, newPassword} = req.body;
+
+    // if(!(newPassword === confirmPassword)) {
+    //     throw new ApiError(400, "new password and confirm password must be same");
+    // }
+
+    const user = await User.findById(req.body?._id)
+    const isPasswordCorrect = await user.isPasswordCorrect(oldPassword)
+
+    if(!isPasswordCorrect) {
+        throw new ApiError(400, "Invalid Old Password");
+    }
+
+    user.password = newPassword;
+    await user.save({validateBeforeSave: false});
+
+    return res.status(200).json(new ApiResponse(200, {}, "Password changed successfully"));
+
+})
+
+const getCurrentUser = asyncHandler(async(req, res) => {
+    console.log(req.user);
+    return res.status(200).json(new ApiResponse(200, req.user, "Current user fetched successfully"));
+})
+
+const updateAccountDetails = asyncHandler(async(req, res) => {
+    const {fullName, email} = req.body
+
+    if(!fullName || !email) {
+        throw new ApiError(400, "All fields are required");
+    }
+
+    // User.findByIdAndUpdate(req.user?._id, {$set: fullName, email}) ------------- You can write it in that way also "ES6 syntax"---
+    const updatedUser = await User.findByIdAndUpdate(req.user?._id, { $set: {fullName: fullName, email: email} }, {new: true}).select("-password");
+
+    return res.status(200).json(new ApiResponse(200, updatedUser, "Account details updated successfully"))
+})
+
 export {
     registerUser,
     loginUser,
     logoutUser,
     refreshAccessToken,
+    ChangeCurrentPassword,
+    getCurrentUser,
+    updateAccountDetails
 }

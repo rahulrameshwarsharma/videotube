@@ -1,4 +1,12 @@
 #   Step 01: Fix a Schema for the project backend and make pictorial representation
+-    ## Modelling for schema
+```
+import mongoose, {Schema} from "mongoose";
+
+const ModelNameSchema = new Schema({}, {timestamps: true});
+
+export const ModelName = mongoose.model("ModelName", ModelNameSchema);
+```
 
 ##   Creating production grade project of youtube clone
 

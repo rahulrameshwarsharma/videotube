@@ -1,5 +1,6 @@
 import { v2 as v2cloudinary } from "cloudinary";
 import { response } from "express";
+import { User } from "../models/user-model.js";
 
 import fs from "fs";
 
@@ -10,6 +11,13 @@ v2cloudinary.config({
 })
 
 const uploadOnCloudinary = async (localFilePath) => {
+    // ----------- for deleting the old image------------------
+    // const userImg = User.findById(req.user?._id);
+    // if(!userImg) {
+    //     throw new ApiError ("User not exit")
+    // }
+
+    // const oldCoverImageUrl = userImg.coverImage;
     try {
         if (!localFilePath) return null
         //upload the file on cloudinary
@@ -18,6 +26,13 @@ const uploadOnCloudinary = async (localFilePath) => {
         //if file uploaded successfully to cloudinary
         // console.log("file is uploaded on cloudinary", uploadOnCloudinaryResponse.url);
         fs.unlinkSync(localFilePath);
+
+        if (!uploadOnCloudinaryResponse) {
+            throw new ApiError("Cover Image not updated due to unknown reason");
+        }
+         // ----------- for deleting the old image------------------
+        // v2cloudinary.uploader.destroy(oldCoverImageUrl);
+
         
         return uploadOnCloudinaryResponse; //for users to know the upload status
     }catch (error) {

@@ -115,7 +115,7 @@ const registerUser = asyncHandler ( async (req, res) => {
     return res.status(201).json(
         new ApiResponse(200, createdUser, "User Registered Successfully")
     )
-})
+});
 
 const loginUser = asyncHandler (async (req, res) => {
 
@@ -173,14 +173,18 @@ const loginUser = asyncHandler (async (req, res) => {
         }
 
         return res.status(200).cookie("accessToken", accessToken, options).cookie("refreshToken", refreshToken, options).json(new ApiResponse(200, {user: loggedInUser, accessToken, refreshToken}, "User logged in successfully"))
-})
+});
 
 const logoutUser = asyncHandler(async(req, res) => {
     await User.findByIdAndUpdate(
         req.user._id,
         {
-            $set: {
-                refreshToken: undefined
+            // $set: {
+            //     refreshToken: undefined
+            // }
+            $unset: {
+                // This removes the field from document
+                refreshToken: 1
             }
         },
         {
@@ -194,7 +198,7 @@ const logoutUser = asyncHandler(async(req, res) => {
     }
 
     return res.status(200).clearCookie("accessToken", options).clearCookie("refreshToken", options).json(new ApiResponse(200, {}, "User logged Out"))
-})
+});
 
 const refreshAccessToken = asyncHandler(async (req, res) => {
     const oldRefreshToken = req.cookies.refreshToken || req.body.refreshToken
@@ -235,7 +239,7 @@ try {
     throw new ApiError(401, error?.message || "Invalid refresh token while regenerating a new one");
 }
 
-})
+});
 
 const ChangeCurrentPassword = asyncHandler(async(req, res) => {
     const {oldPassword, newPassword} = req.body;
@@ -256,12 +260,12 @@ const ChangeCurrentPassword = asyncHandler(async(req, res) => {
 
     return res.status(200).json(new ApiResponse(200, {}, "Password changed successfully"));
 
-})
+});
 
 const getCurrentUser = asyncHandler(async(req, res) => {
     console.log(req.user);
     return res.status(200).json(new ApiResponse(200, req.user, "Current user fetched successfully"));
-})
+});
 
 const updateAccountDetails = asyncHandler(async(req, res) => {
     const {fullName, email} = req.body
@@ -274,7 +278,7 @@ const updateAccountDetails = asyncHandler(async(req, res) => {
     const updatedUser = await User.findByIdAndUpdate(req.user?._id, { $set: {fullName: fullName, email: email} }, {new: true}).select("-password");
 
     return res.status(200).json(new ApiResponse(200, updatedUser, "Account details updated successfully"))
-})
+});
 
 // The recommended suggestions for a production grade code is: => Always update a 'file data' seperately rather then updating it with 'String data or Text data'.
 
@@ -293,12 +297,21 @@ const updateUserAvatar = asyncHandler(async(req, res) => {
 
     const updatedAvatar = await User.findByIdAndUpdate(req.user?._id, {$set: {avatar: avatar.url} }, {new: true}).select("-password");
 
-    return res.status(200).json(200, updatedAvatar, "Avatar is uploaded successfully");
-})
+    return res.status(200).json(new ApiResponse(200, updatedAvatar, "Avatar is uploaded successfully"));
+});
 
 //  Self tried code , probabily of having errors
 
 const updateCoverImage = asyncHandler(async(req, res) => {
+    // ----------- for deleting the old image------------------
+
+    // const userImg = User.findById(req.user?._id);
+    // if(!userImg) {
+    //     throw new ApiError ("User not exit")
+    // }
+
+    // const oldCoverImageUrl = userImg.coverImage;
+
     const coverImageLocalPath = req.file?.path;
     if(!coverImageLocalPath) {
         throw new ApiError(400, "Cover Image is missing");
@@ -311,7 +324,69 @@ const updateCoverImage = asyncHandler(async(req, res) => {
     }
 
     const updatedUser = await User.findByIdAndUpdate(req.user?._id, {$set: {coverImage: updatedCoverImage.url}}, {new: true}).select("-password");
+
     return res.status(200).json(new ApiResponse(200, updatedUser, "CoverImage updated successfully"));
+});
+
+const getUserChannelProfile = asyncHandler(async(req, res) => {
+    const {userName} = req.params
+
+    if(!userName?.trim()) {
+        throw new ApiError(400, "username is missing");
+    }
+
+    const channel = await User.aggregate([
+        {
+            $match: {
+                userName: userName?.toLowerCase()
+            }
+        },
+        {
+            $lookup: {
+                from: "subscriptions",
+                localField: "_id",
+                foreignField: "channel",
+                as: "ChannelSubscriptions"
+            }
+        },
+        {
+            $lookup: {
+                from: "subscriptions",
+                localField: "_id",
+                foreignField: "subscriber",
+                as: "channelSubscribedTo"
+            }
+        },
+        {
+            $addFields: {
+                ChannelSubscribersCount: {
+                    $size: "$ChannelSubscriptions"
+                },
+                channelSubscribedToCount: {
+                    $size: "$channelSubscribedTo"
+                },
+                isSubscribed: {
+                    $cond: {
+                        if: {$in: [req.user?._id, "$ChannelSubscriptions.subscriber"]},
+                        then: true,
+                        else: false
+                    }
+                }
+            }
+        },
+        {
+            $project: {
+                fullName: 1,
+                userName: 1,
+                ChannelSubscribersCount: 1,
+                channelSubscribedToCount: 1,
+                isSubscribed: 1,
+                avatar: 1,
+                coverImage: 1,
+                email: 1,
+            }
+        }
+    ])
 });
 
 export {
@@ -323,5 +398,6 @@ export {
     getCurrentUser,
     updateAccountDetails,
     updateUserAvatar,
-    updateCoverImage
+    updateCoverImage,
+    getUserChannelProfile
 }

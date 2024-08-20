@@ -21,7 +21,7 @@ router.route("/register").post(
 
 router.route("/login").post(loginUser)
 
-// router.route("/userProfile").get(getCurrentUser)
+router.route("/userProfile").get(verifyJWT, getCurrentUser)
 
 //secured Routes
 
